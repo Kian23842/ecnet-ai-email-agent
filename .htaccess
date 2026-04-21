@@ -1,0 +1,13 @@
+# Redirect all requests to index.html EXCEPT /api/* and real files
+Options -MultiViews
+RewriteEngine On
+
+# Allow direct access to real files and directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route /api/* to api/index.php
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# Serve SPA for all other routes (React Router)
+RewriteRule ^(?!api/).*$ /index.html [L]
