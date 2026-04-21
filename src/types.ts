@@ -23,7 +23,22 @@ export interface GCPConfig {
   updated_at: string;
 }
 
+export interface AzureConfig {
+  organization_id: string;
+  client_id: string;
+  tenant_id: string;
+  redirect_uri: string;
+  updated_at: string;
+}
+
 export interface GmailAccount {
+  id: string;
+  email: string;
+  organization_id: string;
+  expires_at: string;
+}
+
+export interface OutlookAccount {
   id: string;
   email: string;
   organization_id: string;
@@ -33,6 +48,8 @@ export interface GmailAccount {
 export interface Message {
   id: string;
   organization_id: string;
+  gmail_account_id?: string;
+  outlook_account_id?: string;
   thread_id: string;
   subject: string;
   from_email: string;

@@ -37,6 +37,11 @@ export const connectGmail = () => api.post('/gmail/connect');
 export const syncGmail    = () => api.post('/gmail/sync');
 export const sendDraft    = (draftId: string) => api.post('/gmail/send', { draft_id: draftId });
 
+// ── Outlook ───────────────────────────────────────────────────
+export const connectOutlook = () => api.post('/outlook/connect');
+export const syncOutlook    = () => api.post('/outlook/sync');
+export const sendDraftOutlook = (draftId: string) => api.post('/outlook/send', { draft_id: draftId });
+
 // ── Messages ──────────────────────────────────────────────────
 export const getMessages  = (limit = 50, offset = 0) => api.get(`/messages?limit=${limit}&offset=${offset}`);
 
@@ -58,3 +63,6 @@ export const adminDeleteOrg    = (id: string) => api.delete(`/admin/organization
 export const adminGetGCP       = (orgId: string) => api.get(`/admin/gcp/${orgId}`);
 export const adminSaveGCP      = (data: object) => api.post('/admin/gcp', data);
 export const adminDeleteGCP    = (orgId: string) => api.delete(`/admin/gcp/${orgId}`);
+export const adminGetAzure     = (orgId: string) => api.get(`/admin/azure/${orgId}`);
+export const adminSaveAzure    = (data: object) => api.post('/admin/azure', data);
+export const adminDeleteAzure  = (orgId: string) => api.delete(`/admin/azure/${orgId}`);

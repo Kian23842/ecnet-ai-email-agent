@@ -77,11 +77,41 @@ CREATE TABLE IF NOT EXISTS gmail_accounts (
   FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ── Azure OAuth Configs (per-org) ──────────────────────────────
+CREATE TABLE IF NOT EXISTS azure_configs (
+  organization_id  VARCHAR(64)  NOT NULL,
+  client_id        TEXT         NOT NULL,
+  client_secret    TEXT         NOT NULL,  -- AES-256 encrypted
+  tenant_id        VARCHAR(255) DEFAULT 'common',
+  redirect_uri     VARCHAR(500),
+  updated_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (organization_id),
+  FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Outlook Accounts (connected mailboxes) ────────────────────
+CREATE TABLE IF NOT EXISTS outlook_accounts (
+  id               CHAR(36)     NOT NULL,  -- UUID
+  organization_id  VARCHAR(64)  NOT NULL,
+  email            VARCHAR(255) NOT NULL,
+  access_token     TEXT         NOT NULL,  -- AES-256 encrypted
+  refresh_token    TEXT,                   -- AES-256 encrypted
+  token_type       VARCHAR(50)  DEFAULT 'Bearer',
+  expires_at       DATETIME,
+  scope            TEXT,
+  created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_outlook_accounts_email_org (email, organization_id),
+  FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ── Messages ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS messages (
-  id               VARCHAR(255) NOT NULL,  -- Gmail message ID
+  id               VARCHAR(255) NOT NULL,  -- Gmail or Outlook message ID
   organization_id  VARCHAR(64)  NOT NULL,
-  gmail_account_id CHAR(36)     NOT NULL,
+  gmail_account_id CHAR(36)     NULL,
+  outlook_account_id CHAR(36)   NULL,
   thread_id        VARCHAR(255) NOT NULL,
   subject          VARCHAR(1000),
   from_email       VARCHAR(255),
@@ -93,7 +123,8 @@ CREATE TABLE IF NOT EXISTS messages (
   KEY idx_messages_org (organization_id),
   KEY idx_messages_received (received_at DESC),
   FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
-  FOREIGN KEY (gmail_account_id) REFERENCES gmail_accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (gmail_account_id) REFERENCES gmail_accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (outlook_account_id) REFERENCES outlook_accounts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ── AI Classifications ────────────────────────────────────────

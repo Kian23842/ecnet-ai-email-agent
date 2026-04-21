@@ -49,6 +49,13 @@ $routes = [
     'GET /admin/gcp/{orgId}'              => 'admin/gcp/get.php',
     'POST /admin/gcp'                     => 'admin/gcp/save.php',
     'DELETE /admin/gcp/{orgId}'           => 'admin/gcp/delete.php',
+    'POST /outlook/connect'               => 'outlook/connect.php',
+    'GET /outlook/callback'               => 'outlook/callback.php',
+    'POST /outlook/sync'                  => 'outlook/sync.php',
+    'POST /outlook/send'                  => 'outlook/send.php',
+    'GET /admin/azure/{orgId}'            => 'admin/azure/get.php',
+    'POST /admin/azure'                   => 'admin/azure/save.php',
+    'DELETE /admin/azure/{orgId}'         => 'admin/azure/delete.php',
 ];
 
 foreach ($routes as $route => $file) {

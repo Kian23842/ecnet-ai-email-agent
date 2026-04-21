@@ -8,7 +8,8 @@ import {
 import { User, Message } from './types';
 import {
   syncGmail, getMessages, connectGmail, classifyMessage,
-  generateDraft, updateDraft, sendDraft, logout
+  generateDraft, updateDraft, sendDraft, logout,
+  connectOutlook, syncOutlook, sendDraftOutlook
 } from './api/client';
 import { usePolling } from './hooks/usePolling';
 
@@ -52,6 +53,8 @@ export default function MainDashboard({ user, onLogout }: Props) {
   const [tab, setTab]                       = useState<'inbox' | 'settings'>('inbox');
   const [notification, setNotif]            = useState<string | null>(null);
   const [gmailConnecting, setGmailConnect]  = useState(false);
+  const [outlookConnecting, setOutlookConnect] = useState(false);
+  const [syncingOutlook, setSyncingOutlook] = useState(false);
 
   const notify = (msg: string) => {
     setNotif(msg);
@@ -105,6 +108,38 @@ export default function MainDashboard({ user, onLogout }: Props) {
     }
   };
 
+  const handleSyncOutlook = async () => {
+    setSyncingOutlook(true);
+    try {
+      const res = await syncOutlook();
+      notify(`✓ Synced ${res.data.data.synced} Outlook messages`);
+      await fetchMessages();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } } };
+      notify(`✗ Outlook Sync failed: ${e.response?.data?.error ?? 'Unknown error'}`);
+    } finally {
+      setSyncingOutlook(false);
+    }
+  };
+
+  const handleConnectOutlook = async () => {
+    setOutlookConnect(true);
+    try {
+      const res = await connectOutlook();
+      const popup = window.open(res.data.data.url, '_blank', 'width=600,height=700');
+      window.addEventListener('message', (e) => {
+        if (e.data?.type === 'OUTLOOK_AUTH_SUCCESS') {
+          notify(`✓ Outlook connected: ${e.data.email}`);
+          popup?.close();
+        }
+      }, { once: true });
+    } catch {
+      notify('✗ Could not get Outlook auth URL');
+    } finally {
+      setOutlookConnect(false);
+    }
+  };
+
   const handleClassify = async (msg: Message) => {
     setClassifying(msg.id);
     try {
@@ -147,7 +182,11 @@ export default function MainDashboard({ user, onLogout }: Props) {
     if (!msg.draft_id) return;
     setSending(msg.id);
     try {
-      await sendDraft(msg.draft_id);
+      if (msg.outlook_account_id) {
+        await sendDraftOutlook(msg.draft_id);
+      } else {
+        await sendDraft(msg.draft_id);
+      }
       await fetchMessages();
       notify('✓ Message sent!');
     } catch {
@@ -220,23 +259,43 @@ export default function MainDashboard({ user, onLogout }: Props) {
         </nav>
 
         <div className="p-4 border-t border-white/5 space-y-3">
-          <button
-            onClick={handleConnectGmail}
-            disabled={gmailConnecting}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-emerald-400 hover:bg-emerald-400/10 transition-all"
-          >
-            {gmailConnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link className="w-3 h-3" />}
-            Connect Gmail
-          </button>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-blue-400 hover:bg-blue-400/10 transition-all"
-          >
-            {syncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-            Sync Now
-          </button>
-          <div className="flex items-center gap-2 px-3">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleConnectGmail}
+              disabled={gmailConnecting}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-emerald-400 bg-emerald-400/5 hover:bg-emerald-400/10 transition-all"
+            >
+              {gmailConnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link className="w-3 h-3" />}
+              Gmail
+            </button>
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-blue-400 bg-blue-400/5 hover:bg-blue-400/10 transition-all"
+            >
+              {syncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              Sync
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleConnectOutlook}
+              disabled={outlookConnecting}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-cyan-400 bg-cyan-400/5 hover:bg-cyan-400/10 transition-all"
+            >
+              {outlookConnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link className="w-3 h-3" />}
+              Outlook
+            </button>
+            <button
+              onClick={handleSyncOutlook}
+              disabled={syncingOutlook}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-blue-400 bg-blue-400/5 hover:bg-blue-400/10 transition-all"
+            >
+              {syncingOutlook ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              Sync
+            </button>
+          </div>
+          <div className="flex items-center gap-2 px-3 mt-4">
             <div className="w-7 h-7 bg-slate-700 rounded-full flex items-center justify-center text-xs font-black text-slate-300">
               {user.display_name?.[0]?.toUpperCase() ?? 'U'}
             </div>
